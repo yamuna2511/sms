@@ -1,18 +1,15 @@
 package com.sa.socialcoding.sms.service.impl;
 
-import com.sa.socialcoding.sms.dto.BatchDTO;
-import com.sa.socialcoding.sms.dto.ModuleTeacherAssignmentDTO;
-import com.sa.socialcoding.sms.dto.StudentBatchDTO;
-import com.sa.socialcoding.sms.model.Batch;
-import com.sa.socialcoding.sms.model.ModuleTeacherAssignment;
-import com.sa.socialcoding.sms.model.StudentBatch;
-import com.sa.socialcoding.sms.repository.BatchRepository;
-import com.sa.socialcoding.sms.repository.ModuleTeacherAssignmentRepository;
+import com.sa.socialcoding.sms.dto.*;
+import com.sa.socialcoding.sms.model.*;
+import com.sa.socialcoding.sms.repository.*;
 import com.sa.socialcoding.sms.service.BatchService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.*;
 
 @Service
@@ -24,6 +21,15 @@ public class BatchServiceImpl implements BatchService {
 
     @Autowired
     private BatchRepository batchRepository;
+
+    @Autowired
+    private AssignmentRepository assignmentRepository;
+
+    @Autowired
+    private StudentBatchRepository studentBatchRepository;
+
+    @Autowired
+    private StudentAssignmentRepository studentAssignmentRepository;
 
     @Autowired
     private CourseServiceImpl courseService;
@@ -67,6 +73,116 @@ public class BatchServiceImpl implements BatchService {
         return batchDTOList;
     }
 
+    @Override
+    public String createAssignment(AssignmentDTO request) throws ParseException {
+        Assignment ass = new Assignment();
+        ass.setAssignmentType(request.getAssignmentType());
+        ass.setTeacherId(request.getTeacherId());
+        ass.setModuleId(request.getModuleId());
+        ass.setDueDate(formatDate(request.getDueDate()));
+        ass.setTopicId(request.getTopicId());
+        ass.setQuestionSet(toQuestionEntity(request.getQuestionDTOList(), ass));
+        log.info("Assignment Info - {}", ass);
+        Assignment result = assignmentRepository.save(ass);
+        String finalResult = createStudentAssignment(result, request);
+        return finalResult;
+    }
+
+    @Override
+    public List<AssignmentDTO> getAllAssignments() {
+        List<Assignment> assignmentList = assignmentRepository.findAll();
+        List<AssignmentDTO> assignmentDTOList = new ArrayList<>();
+        for(Assignment assignment : assignmentList) {
+            AssignmentDTO dto = new AssignmentDTO();
+            dto.setAssignmentType(assignment.getAssignmentType());
+            dto.setDueDate(assignment.getDueDate().toString());
+            dto.setTopicId(assignment.getTopicId());
+            dto.setTeacherId(assignment.getTeacherId());
+            dto.setModuleId(assignment.getModuleId());
+            dto.setQuestionDTOList(toQuestionDTO(assignment.getQuestionSet()));
+            assignmentDTOList.add(dto);
+        }
+        return assignmentDTOList;
+    }
+
+    private List<QuestionDTO> toQuestionDTO(Set<Question> questionSet) {
+        List<QuestionDTO> questionDTOList = new ArrayList<>();
+        for(Question question : questionSet) {
+            QuestionDTO dto = new QuestionDTO();
+            dto.setDesc(question.getDesc());
+            dto.setType(question.getType());
+            dto.setLink(question.getLink());
+            dto.setChoiceDTOList(toQuestionChoiceDTO(question.getQuestionChoiceSet()));
+            questionDTOList.add(dto);
+        }
+        return questionDTOList;
+    }
+
+    private List<QuestionChoiceDTO> toQuestionChoiceDTO(Set<QuestionChoice> questionChoiceSet) {
+        List<QuestionChoiceDTO> questionChoiceDTOList = new ArrayList<>();
+        for(QuestionChoice choice : questionChoiceSet) {
+            QuestionChoiceDTO dto = new QuestionChoiceDTO();
+            dto.setChoice(choice.getChoice());
+            questionChoiceDTOList.add(dto);
+        }
+        return questionChoiceDTOList;
+    }
+
+    private String createStudentAssignment(Assignment result, AssignmentDTO request) {
+        //1. get moduleId & TeacherId and get the batchId details
+        //2. get studentBatchId via batchId
+        //3. make entry in studentAssignment table
+        int batchId= moduleTeacherAssignmentRepository.
+                findByTeacherAndModuleId(request.getTeacherId(), request.getModuleId());
+        Batch batch = new Batch();
+        batch.setBatchId(batchId);
+        List<Integer> studentBatchIds = studentBatchRepository.findByBatchId(batch);
+        List<StudentAssignment> studentAssignmentList = new ArrayList<>();
+        for(int studentBatchId : studentBatchIds) {
+            StudentAssignment ass = new StudentAssignment();
+            ass.setAssignedOn(new Date());
+            ass.setAssignmentId(result.getAssignmentId());
+            ass.setStudentBatchId(studentBatchId);
+            ass.setModuleId(request.getModuleId());
+            ass.setTopicId(request.getTopicId());
+            ass.setDueDate(result.getDueDate());
+            studentAssignmentList.add(ass);
+        }
+        studentAssignmentRepository.saveAll(studentAssignmentList);
+        return "Created successfully";
+    }
+
+    private Set<Question> toQuestionEntity(List<QuestionDTO> questionDTOList, Assignment ass) {
+        Set<Question> questionSet = new HashSet<>();
+        for(QuestionDTO questionDTO : questionDTOList) {
+            Question ques = new Question();
+            ques.setAssignment(ass);
+            ques.setDesc(questionDTO.getDesc());
+            ques.setLink(questionDTO.getLink());
+            ques.setType(questionDTO.getType());
+            if(questionDTO.getChoiceDTOList() != null)
+                ques.setQuestionChoiceSet(toQuestionChoiceEntity(questionDTO.getChoiceDTOList(), ques));
+            questionSet.add(ques);
+        }
+        return questionSet;
+    }
+
+    private Set<QuestionChoice> toQuestionChoiceEntity(List<QuestionChoiceDTO> choiceDTOList, Question ques) {
+        Set<QuestionChoice> questionChoiceSet = new HashSet<>();
+        for (QuestionChoiceDTO questionChoiceDTO : choiceDTOList) {
+            QuestionChoice choice = new QuestionChoice();
+            choice.setQuestion(ques);
+            choice.setChoice(questionChoiceDTO.getChoice());
+            questionChoiceSet.add(choice);
+        }
+        return questionChoiceSet;
+    }
+
+    private Date formatDate(String dueDate) throws ParseException {
+        SimpleDateFormat formatter = new SimpleDateFormat("dd-MMM-yyyy", Locale.ENGLISH);
+        return formatter.parse(dueDate);
+    }
+
     private BatchDTO toBatchDTO(Batch batch) {
         BatchDTO batchDTO = new BatchDTO();
         batchDTO.setBatchName(batch.getBatchName());
@@ -107,7 +223,7 @@ public class BatchServiceImpl implements BatchService {
     private Date getEndDate(int courseId) {
         Calendar cal = Calendar.getInstance();
         int duration = courseService.findByCourseId(courseId).getDurationInMonth();
-        cal.add(Calendar.MONTH, duration);//get from course details API
+        cal.add(Calendar.MONTH, duration);
         return cal.getTime();
     }
 

@@ -1,6 +1,5 @@
 package com.sa.socialcoding.sms.model;
 
-import javax.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -12,8 +11,11 @@ import java.io.Serializable;
 @Setter
 @ToString
 @NoArgsConstructor
-public class StudentBatchId implements Serializable {
+public class StudentAssignmentId implements Serializable {
     private static final long serialVersionUID = 1L;
 
     private int studentBatchId;
+    private int moduleId;
+    private int topicId;
+    private String assignmentId;
 }

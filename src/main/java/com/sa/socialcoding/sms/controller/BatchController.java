@@ -1,5 +1,6 @@
 package com.sa.socialcoding.sms.controller;
 
+import com.sa.socialcoding.sms.dto.AssignmentDTO;
 import com.sa.socialcoding.sms.dto.BatchDTO;
 import com.sa.socialcoding.sms.dto.ModuleTeacherAssignmentDTO;
 import com.sa.socialcoding.sms.service.BatchService;
@@ -46,7 +47,6 @@ public class BatchController {
             String result = batchService.createBatch(request);
             return ResponseEntity.ok(result);
         } catch (Exception e) {
-            e.printStackTrace();
             logger.error("Exception while creating batch {}", e.getCause());
             return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
         }
@@ -61,5 +61,21 @@ public class BatchController {
     @GetMapping(path = "/all")
     public List<BatchDTO> getAllBatches() {
         return batchService.getAllBatches();
+    }
+
+    @PostMapping(path = "/submit/assignment")
+    public ResponseEntity<String> createAssignment(@RequestBody AssignmentDTO request) {
+        try {
+            String result = batchService.createAssignment(request);
+            return ResponseEntity.ok(result);
+        } catch (Exception e) {
+            logger.error("Exception while creating assignment {}", e.getCause());
+            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @GetMapping(path = "/allAssignments")
+    public List<AssignmentDTO> getAllAssignments() {
+        return batchService.getAllAssignments();
     }
 }

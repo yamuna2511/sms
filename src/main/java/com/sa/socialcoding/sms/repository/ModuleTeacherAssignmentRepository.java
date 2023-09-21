@@ -11,4 +11,6 @@ import java.util.List;
 public interface ModuleTeacherAssignmentRepository extends JpaRepository<ModuleTeacherAssignment, Integer> {
     @Query("select m from ModuleTeacherAssignment m where m.teacherId=?1")
     List<ModuleTeacherAssignment> findByTeacherId(int teacherId);
+    @Query("select m.batchId from ModuleTeacherAssignment m where m.teacherId=?1 and m.moduleId=?2")
+    int findByTeacherAndModuleId(int teacherId, int moduleId);
 }
