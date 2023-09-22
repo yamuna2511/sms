@@ -19,7 +19,7 @@ public class Assignment {
 
     @Id
     @GeneratedValue(generator = "idGenerator")
-    @GenericGenerator(name = "idGenerator", strategy = "com.sa.socialcoding.sms.model.IdGenerator")
+    @GenericGenerator(name = "idGenerator", strategy = "com.sa.socialcoding.sms.model.AssignmentIdGenerator")
     @Column(name = "ASSIGNMENT_ID")
     private String assignmentId;
 
