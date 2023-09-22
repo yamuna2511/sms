@@ -27,7 +27,7 @@ public class ParentDetail implements Serializable {
     private String middleName;
 
     @Column(name = "PARENT_LAST_NAME")
-    private String lastname;
+    private String lastName;
 
     @Column(name = "RELATION_TO_STUDENT")
     private String relationType;

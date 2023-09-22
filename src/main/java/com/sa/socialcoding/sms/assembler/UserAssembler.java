@@ -23,13 +23,15 @@ public class UserAssembler {
     public User fromUserDTOToEntity(UserDTO userDTO){
         User userEntity = new User();
         BeanUtils.copyProperties(userDTO, userEntity);
-        try{
-            SimpleDateFormat formatter = new SimpleDateFormat("dd-MMM-yyyy", Locale.ENGLISH);
-            java.util.Date date = formatter.parse(userDTO.getDob());
-            java.sql.Date dob = new java.sql.Date(date.getTime());
-            userEntity.setDob(dob);
-        }catch(Exception e){
-            log.error("Exception in date conversion", e);
+        if(Objects.nonNull(userDTO.getDob()) && !"".equalsIgnoreCase(userDTO.getDob())){
+            try{
+                SimpleDateFormat formatter = new SimpleDateFormat("dd-MMM-yyyy", Locale.ENGLISH);
+                java.util.Date date = formatter.parse(userDTO.getDob());
+                java.sql.Date dob = new java.sql.Date(date.getTime());
+                userEntity.setDob(dob);
+            }catch(Exception e){
+                log.error("Exception in date conversion", e);
+            }
         }
         if(Objects.nonNull(userDTO.getParentDetailDTO())){
             fromParentEntityToDTO(userEntity, userDTO.getParentDetailDTO());
@@ -40,8 +42,11 @@ public class UserAssembler {
     public UserDTO fromUserEntityToDTO(User userEntity){
         UserDTO userDTO = new UserDTO();
         BeanUtils.copyProperties(userEntity, userDTO);
-        SimpleDateFormat formatter = new SimpleDateFormat("dd-MMM-yyyy", Locale.ENGLISH);
-        userDTO.setDob(formatter.format(userEntity.getDob()));
+        if(Objects.nonNull(userEntity.getDob())){
+            SimpleDateFormat formatter = new SimpleDateFormat("dd-MMM-yyyy", Locale.ENGLISH);
+            userDTO.setDob(formatter.format(userEntity.getDob()));
+        }
+
         if(Objects.nonNull(userEntity.getParentDetail())){
             fromParentDTOToEntity(userDTO, userEntity.getParentDetail());
         }
@@ -52,7 +57,7 @@ public class UserAssembler {
         ParentDetailDTO parentDetailDTO = new ParentDetailDTO();
         parentDetailDTO.setFirstName(parentDetail.getFirstName());
         parentDetailDTO.setMiddleName(parentDetail.getMiddleName());
-        parentDetailDTO.setLastname(parentDetail.getLastname());
+        parentDetailDTO.setLastName(parentDetail.getLastName());
         parentDetailDTO.setRelationType(parentDetail.getRelationType());
         parentDetailDTO.setMobile(parentDetail.getMobile());
         parentDetailDTO.setMailId(parentDetail.getMailId());
@@ -64,7 +69,7 @@ public class UserAssembler {
         parentDetail.setStudent(userEntity);
         parentDetail.setFirstName(parentDetailDTO.getFirstName());
         parentDetail.setMiddleName(parentDetailDTO.getMiddleName());
-        parentDetail.setLastname(parentDetailDTO.getLastname());
+        parentDetail.setLastName(parentDetailDTO.getLastName());
         parentDetail.setRelationType(parentDetailDTO.getRelationType());
         parentDetail.setMobile(parentDetailDTO.getMobile());
         parentDetail.setMailId(parentDetailDTO.getMailId());

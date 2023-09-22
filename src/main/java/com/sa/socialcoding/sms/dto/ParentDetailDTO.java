@@ -12,7 +12,7 @@ import lombok.Setter;
 public class ParentDetailDTO {
     private String firstName;
     private String middleName;
-    private String lastname;
+    private String lastName;
     private String relationType;
     private String mobile;
     private String mailId;

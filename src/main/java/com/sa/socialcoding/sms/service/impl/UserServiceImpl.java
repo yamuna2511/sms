@@ -41,8 +41,8 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public String submit(UserDTO userRequest) {
-        log.info("Creating new user");
+    public void submit(UserDTO userRequest) {
+        log.info("Creating new user", userRequest.getDob());
         User user = userAssembler.fromUserDTOToEntity(userRequest);
         user.setCreatedOn(new Date());
 
@@ -55,9 +55,7 @@ public class UserServiceImpl implements UserService {
         userCredential.setUserStatus("NEW");
         userCredential.setUser(user);
         user.setUserCredential(userCredential);
-
         userRepository.save(user);
-        return "Submitted successfully";
     }
 
     @Override
