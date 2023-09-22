@@ -11,12 +11,11 @@ import java.io.Serializable;
 @Setter
 @ToString
 @NoArgsConstructor
-public class StudentAssignmentId implements Serializable {
+public class StudentAssessmentId implements Serializable {
     private static final long serialVersionUID = 1L;
 
     private int studentBatchId;
     private int moduleId;
-    private int topicId;
     private int teacherId;
-    private String assignmentId;
+    private String assessmentId;
 }

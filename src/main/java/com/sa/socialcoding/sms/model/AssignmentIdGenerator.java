@@ -8,7 +8,7 @@ import java.io.Serializable;
 import java.security.SecureRandom;
 
 @Slf4j
-public class IdGenerator implements IdentifierGenerator {
+public class AssignmentIdGenerator implements IdentifierGenerator {
 
     @Override
     public Serializable generate(SharedSessionContractImplementor session, Object object) {
@@ -16,6 +16,6 @@ public class IdGenerator implements IdentifierGenerator {
 
         // Generate random integers in range 0 to 999
         int rand_int = rand.nextInt(100000000);
-        return "ASMT"+rand_int;
+        return "G"+rand_int;
     }
 }

@@ -26,10 +26,16 @@ public class BatchServiceImpl implements BatchService {
     private AssignmentRepository assignmentRepository;
 
     @Autowired
+    private AssessmentRepository assessmentRepository;
+
+    @Autowired
     private StudentBatchRepository studentBatchRepository;
 
     @Autowired
     private StudentAssignmentRepository studentAssignmentRepository;
+
+    @Autowired
+    private StudentAssessmentRepository studentAssessmentRepository;
 
     @Autowired
     private CourseServiceImpl courseService;
@@ -84,8 +90,7 @@ public class BatchServiceImpl implements BatchService {
         ass.setQuestionSet(toQuestionEntity(request.getQuestionDTOList(), ass));
         log.info("Assignment Info - {}", ass);
         Assignment result = assignmentRepository.save(ass);
-        String finalResult = createStudentAssignment(result, request);
-        return finalResult;
+        return createStudentAssignment(result, request);
     }
 
     @Override
@@ -146,6 +151,7 @@ public class BatchServiceImpl implements BatchService {
             ass.setModuleId(request.getModuleId());
             ass.setTopicId(request.getTopicId());
             ass.setDueDate(result.getDueDate());
+            ass.setTeacherId(request.getTeacherId());
             studentAssignmentList.add(ass);
         }
         studentAssignmentRepository.saveAll(studentAssignmentList);
@@ -167,10 +173,36 @@ public class BatchServiceImpl implements BatchService {
         return questionSet;
     }
 
+    private Set<QuestionAsmt> toQuestionAsmtEntity(List<QuestionDTO> questionDTOList, Assessment ass) {
+        Set<QuestionAsmt> questionSet = new HashSet<>();
+        for(QuestionDTO questionDTO : questionDTOList) {
+            QuestionAsmt ques = new QuestionAsmt();
+            ques.setAssessment(ass);
+            ques.setDesc(questionDTO.getDesc());
+            ques.setLink(questionDTO.getLink());
+            ques.setType(questionDTO.getType());
+            if(questionDTO.getChoiceDTOList() != null)
+                ques.setQuestionChoiceSet(toQuestionAsmtChoiceEntity(questionDTO.getChoiceDTOList(), ques));
+            questionSet.add(ques);
+        }
+        return questionSet;
+    }
+
     private Set<QuestionChoice> toQuestionChoiceEntity(List<QuestionChoiceDTO> choiceDTOList, Question ques) {
         Set<QuestionChoice> questionChoiceSet = new HashSet<>();
         for (QuestionChoiceDTO questionChoiceDTO : choiceDTOList) {
             QuestionChoice choice = new QuestionChoice();
+            choice.setQuestion(ques);
+            choice.setChoice(questionChoiceDTO.getChoice());
+            questionChoiceSet.add(choice);
+        }
+        return questionChoiceSet;
+    }
+
+    private Set<QuestionAsmtChoice> toQuestionAsmtChoiceEntity(List<QuestionChoiceDTO> choiceDTOList, QuestionAsmt ques) {
+        Set<QuestionAsmtChoice> questionChoiceSet = new HashSet<>();
+        for (QuestionChoiceDTO questionChoiceDTO : choiceDTOList) {
+            QuestionAsmtChoice choice = new QuestionAsmtChoice();
             choice.setQuestion(ques);
             choice.setChoice(questionChoiceDTO.getChoice());
             questionChoiceSet.add(choice);
@@ -238,5 +270,43 @@ public class BatchServiceImpl implements BatchService {
             studentBatches.add(batchEntity);
         }
         return studentBatches;
+    }
+
+    @Override
+    public String createAssessment(AssessmentDTO request) throws ParseException {
+        Assessment ass = new Assessment();
+        ass.setModuleId(request.getModuleId());
+        ass.setTeacherId(request.getTeacherId());
+        ass.setAssessmentDate(formatDate(request.getAssessmentDate()));
+        ass.setMarks(request.getMarks());
+        ass.setAssessmentName(request.getAssessmentName());
+        ass.setQuestionSet(toQuestionAsmtEntity(request.getQuestionDTOList(), ass));
+
+        log.info("Assessment Info - {}", ass);
+        Assessment result = assessmentRepository.save(ass);
+        return createStudentAssessment(result, request);
+    }
+
+    private String createStudentAssessment(Assessment result, AssessmentDTO request) {
+        //1. get moduleId & TeacherId and get the batchId details
+        //2. get studentBatchId via batchId
+        //3. make entry in studentAssignment table
+        int batchId= moduleTeacherAssignmentRepository.
+                findByTeacherAndModuleId(request.getTeacherId(), request.getModuleId());
+        Batch batch = new Batch();
+        batch.setBatchId(batchId);
+        List<Integer> studentBatchIds = studentBatchRepository.findByBatchId(batch);
+        List<StudentAssessment> studentAssessmentList = new ArrayList<>();
+        for(int studentBatchId : studentBatchIds) {
+            StudentAssessment ass = new StudentAssessment();
+            ass.setAssessmentId(result.getAssessmentId());
+            ass.setStudentBatchId(studentBatchId);
+            ass.setModuleId(request.getModuleId());
+            ass.setTeacherId(request.getTeacherId());
+            ass.setAssignedDate(new Date());
+            studentAssessmentList.add(ass);
+        }
+        studentAssessmentRepository.saveAll(studentAssessmentList);
+        return "Created successfully";
     }
 }
